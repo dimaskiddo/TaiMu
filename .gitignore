@@ -4,3 +4,5 @@ get_id.sh
 
 logs/*
 tasks/*
+
+!tasks/example.txt

@@ -49,6 +49,7 @@ AUTH_RESPONSE=$(curl -s -X POST \
   "$TAIGA_URL/api/v1/auth")
 
 AUTH_TOKEN=$(echo $AUTH_RESPONSE | jq -r '.auth_token')
+TAIGA_USER_ID=$(echo $AUTH_RESPONSE | jq -r '.id')
 
 if [ "$AUTH_TOKEN" == "null" ] || [ -z "$AUTH_TOKEN" ]; then
   log_error "Authentication failed. Please check your credentials in .env file."
