@@ -1,0 +1,6 @@
+.env
+create.sh
+get_id.sh
+
+logs/*
+tasks/*
