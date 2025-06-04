@@ -13,7 +13,7 @@ These scripts help you create tasks in Taiga from the command line or from a bul
 ## Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/taicli.git
+   git clone https://github.com/donnitriosa/TaiCLI.git
    cd taicli
    ```
 2. Make the scripts executable:
