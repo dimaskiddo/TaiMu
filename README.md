@@ -44,7 +44,7 @@ Create multiple tasks from a structured input file.
 
 #### Input File Format
 ```
-STORY_ID
+STORY_REF_ID
 Task Subject | YYYY-MM-DD | HH:MM | Minutes
 Another Task | YYYY-MM-DD | HH:MM | Minutes
 ```
