@@ -107,6 +107,15 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
 
   STORY_ID=$(echo $STORY_RESPONSE | jq -r '.id')
 
+  # Get task status ID for Done
+  STATUS_RESPONSE=$(curl -X GET \
+    -H "Content-Type: application/json" \
+    -H "User-Agent: ${USER_AGENT}" \
+    -H "Authorization: Bearer ${AUTH_TOKEN}" \
+    -s ${TAIGA_URL}api/v1/task-statuses?project=${PROJECT_ID})  
+
+  STATUS_DONE_ID=$(echo $STATUS_RESPONSE | jq '.[] | select(.name=="Done")' | jq -r '.id')
+
   # Create the task
   TASK_RESPONSE=$(curl -X POST \
     -H "Content-Type: application/json" \
