@@ -51,7 +51,7 @@ AUTH_RESPONSE=$(curl -s -X POST \
   -H "Content-Type: application/json" \
   -H "User-Agent: ${USER_AGENT}" \
   -d "{\"type\":\"normal\",\"username\":\"$TAIGA_USER\",\"password\":\"$TAIGA_PASSWORD\"}" \
-  "$TAIGA_URL/api/v1/auth")
+  "${TAIGA_URL}/api/v1/auth")
 
 AUTH_TOKEN=$(echo $AUTH_RESPONSE | jq -r '.auth_token')
 if [ "$AUTH_TOKEN" == "null" ] || [ -z "$AUTH_TOKEN" ]; then
@@ -103,7 +103,7 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
     -H "Content-Type: application/json" \
     -H "User-Agent: ${USER_AGENT}" \
     -H "Authorization: Bearer ${AUTH_TOKEN}" \
-    -s ${TAIGA_URL}/api/v1/userstories/by_ref?ref=${STORY_REF_ID}&project=${PROJECT_ID})
+    -s "${TAIGA_URL}/api/v1/userstories/by_ref?ref=${STORY_REF_ID}&project=${PROJECT_ID}")
 
   STORY_ID=$(echo $STORY_RESPONSE | jq -r '.id')
 
@@ -112,7 +112,7 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
     -H "Content-Type: application/json" \
     -H "User-Agent: ${USER_AGENT}" \
     -H "Authorization: Bearer ${AUTH_TOKEN}" \
-    -s ${TAIGA_URL}/api/v1/task-statuses?project=${PROJECT_ID})  
+    -s "${TAIGA_URL}/api/v1/task-statuses?project=${PROJECT_ID}")
 
   STATUS_DONE_ID=$(echo $STATUS_RESPONSE | jq '.[] | select(.name=="Done")' | jq -r '.id')
 
@@ -146,7 +146,7 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
     -H "Content-Type: application/json" \
     -H "User-Agent: ${USER_AGENT}" \
     -H "Authorization: Bearer ${AUTH_TOKEN}" \
-    -s ${TAIGA_URL}/api/v1/task-custom-attributes?task=${TASK_ID}&project=${PROJECT_ID})
+    -s "${TAIGA_URL}/api/v1/task-custom-attributes?task=${TASK_ID}&project=${PROJECT_ID}")
 
   # Get custom attribute ID for "Activity Date"
   ACTIVITY_DATE_ID=$(echo $ATTR_RESPONSE | jq '.[] | select(.name=="Activity Date")' | jq -r '.id')
