@@ -51,7 +51,7 @@ AUTH_RESPONSE=$(curl -s -X POST \
   -H "Content-Type: application/json" \
   -H "User-Agent: ${USER_AGENT}" \
   -d "{\"type\":\"normal\",\"username\":\"$TAIGA_USER\",\"password\":\"$TAIGA_PASSWORD\"}" \
-  "$TAIGA_URL/api/v1/auth")
+  "${TAIGA_URL}/api/v1/auth")
 
 AUTH_TOKEN=$(echo $AUTH_RESPONSE | jq -r '.auth_token')
 if [ "$AUTH_TOKEN" == "null" ] || [ -z "$AUTH_TOKEN" ]; then
@@ -62,6 +62,22 @@ echo "Authentication successful"
 
 # Get User ID from authentication response
 TAIGA_USER_ID=$(echo $AUTH_RESPONSE | jq -r '.id')
+
+# Get project ID from project slug
+PROJECT_RESPONSE=$(curl -X GET \
+  -H "Content-Type: application/json" \
+  -H "User-Agent: ${USER_AGENT}" \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -s "${TAIGA_URL}/api/v1/projects/by_slug?slug=${PROJECT_SLUG}")
+
+# Extract the project ID
+PROJECT_ID=$(echo $PROJECT_RESPONSE | jq -r '.id')
+
+if [ "$PROJECT_ID" == "null" ] || [ -z "$PROJECT_ID" ]; then
+  log_error "Failed to fetch Project ID from Project Slug $PROJECT_SLUG"
+  log_error "Error: $PROJECT_RESPONSE"
+  exit 1
+fi
 
 # Read the story ID from first line
 read -r STORY_REF_ID < "$INPUT_FILE"
@@ -103,18 +119,32 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
     -H "Content-Type: application/json" \
     -H "User-Agent: ${USER_AGENT}" \
     -H "Authorization: Bearer ${AUTH_TOKEN}" \
-    -s ${TAIGA_URL}/api/v1/userstories/by_ref?ref=${STORY_REF_ID}&project=${PROJECT_ID})
+    -s "${TAIGA_URL}/api/v1/userstories/by_ref?ref=${STORY_REF_ID}&project=${PROJECT_ID}")
 
+  # Extract the story ID
   STORY_ID=$(echo $STORY_RESPONSE | jq -r '.id')
+
+  if [ "$STORY_ID" == "null" ] || [ -z "$STORY_ID" ]; then
+    log_error "Failed to fetch Story ID for Story Reference ID $STORY_REF_ID"
+    log_error "Error: $STORY_RESPONSE"
+    exit 1
+  fi
 
   # Get task status ID for Done
   STATUS_RESPONSE=$(curl -X GET \
     -H "Content-Type: application/json" \
     -H "User-Agent: ${USER_AGENT}" \
     -H "Authorization: Bearer ${AUTH_TOKEN}" \
-    -s ${TAIGA_URL}/api/v1/task-statuses?project=${PROJECT_ID})  
+    -s "${TAIGA_URL}/api/v1/task-statuses?project=${PROJECT_ID}")
 
+  # Extract the status "Done" ID
   STATUS_DONE_ID=$(echo $STATUS_RESPONSE | jq '.[] | select(.name=="Done")' | jq -r '.id')
+
+  if [ "$STATUS_DONE_ID" == "null" ] || [ -z "$STATUS_DONE_ID" ]; then
+    log_error "Failed to fetch Status for Done ID with Project ID $PROJECT_ID ($PROJECT_SLUG)"
+    log_error "Error: $STATUS_RESPONSE"
+    exit 1
+  fi
 
   # Create the task
   TASK_RESPONSE=$(curl -X POST \
@@ -146,16 +176,34 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
     -H "Content-Type: application/json" \
     -H "User-Agent: ${USER_AGENT}" \
     -H "Authorization: Bearer ${AUTH_TOKEN}" \
-    -s ${TAIGA_URL}/api/v1/task-custom-attributes?task=${TASK_ID}&project=${PROJECT_ID})
+    -s "${TAIGA_URL}/api/v1/task-custom-attributes?task=${TASK_ID}&project=${PROJECT_ID}")
 
-  # Get custom attribute ID for "Activity Date"
+  # Extract the custom attribute ID for "Activity Date"
   ACTIVITY_DATE_ID=$(echo $ATTR_RESPONSE | jq '.[] | select(.name=="Activity Date")' | jq -r '.id')
 
-  # Get custom attribute ID for "Start Time"
+  if [ "$ACTIVITY_DATE_ID" == "null" ] || [ -z "$ACTIVITY_DATE_ID" ]; then
+    log_error "Failed to fetch Custom Attribute ID for 'Activity Date' with Project ID $PROJECT_ID ($PROJECT_SLUG) and Task ID $TASK_ID"
+    log_error "Error: $ATTR_RESPONSE"
+    continue
+  fi
+
+  # Extract the custom attribute ID for "Start Time"
   START_TIME_ID=$(echo $ATTR_RESPONSE | jq '.[] | select(.name=="Start Time")' | jq -r '.id')
 
-  # Get custom attribute ID for "Total Time Spent"
+  if [ "$START_TIME_ID" == "null" ] || [ -z "$START_TIME_ID" ]; then
+    log_error "Failed to fetch Custom Attribute ID for 'Start Time' with Project ID $PROJECT_ID ($PROJECT_SLUG)  and Task ID $TASK_ID"
+    log_error "Error: $ATTR_RESPONSE"
+    continue
+  fi
+
+  # Extract the custom attribute ID for "Total Time Spent"
   TOTAL_TIME_SPENT_ID=$(echo $ATTR_RESPONSE | jq '.[] | select(.name=="Total Time Spent")' | jq -r '.id')
+
+  if [ "$TOTAL_TIME_SPENT_ID" == "null" ] || [ -z "$TOTAL_TIME_SPENT_ID" ]; then
+    log_error "Failed to fetch Custom Attribute ID for 'Total Time Spent' with Project ID $PROJECT_ID ($PROJECT_SLUG)  and Task ID $TASK_ID"
+    log_error "Error: $ATTR_RESPONSE"
+    continue
+  fi
 
   # Update the custom attributes
   CUSTOM_FIELDS_RESPONSE=$(curl -X PATCH \
