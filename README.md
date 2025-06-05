@@ -34,7 +34,6 @@ TAIGA_URL=https://your-taiga-domain.com
 TAIGA_USER=your_username
 TAIGA_PASSWORD=your_password
 PROJECT_ID=123
-STATUS_DONE_ID=789
 ```
 Replace the values with your actual Taiga credentials and IDs.
 
