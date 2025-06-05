@@ -1,13 +1,13 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
-# Create By: Donni Triosa (donni.triosa94@gmail.com)
+# Created By: Donni Triosa (donni.triosa94@gmail.com)
+# Contributor:
+# - Dimas Restu Hidayanto (drh.dimasrestu@gmail.com)
+#
 # Creates subtasks in Taiga from a formatted input file with the format:
 # First line: Story ID
 # Subsequent lines: Summary|Date|Time|TimeSpent
 #
-# Usage: ./taicli.sh <input_file>
-# Load auth credentials from .env file
-
 
 # Function to log errors
 log_error() {
@@ -16,11 +16,12 @@ log_error() {
   echo "[${timestamp}] $1" | tee -a "$error_log"
 }
 
+# Usage: ./taicli.sh <input_file>
 # Check if file is provided as argument
 if [ "$#" -ne 1 ]; then
-    log_error "Error: No input file provided"
-    echo "Usage: $0 <input_file>"
-    exit 1
+  log_error "Error: No input file provided"
+  echo "Usage: $0 <input_file>"
+  exit 1
 fi
 
 INPUT_FILE="$1"
@@ -42,20 +43,25 @@ fi
 # Create logs directory if it doesn't exist
 mkdir -p logs
 
+# Set User Agent to be sent when using cURL
+USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36"
+
 # Login to Taiga and get authentication token
 AUTH_RESPONSE=$(curl -s -X POST \
   -H "Content-Type: application/json" \
+  -H "User-Agent: ${USER_AGENT}" \
   -d "{\"type\":\"normal\",\"username\":\"$TAIGA_USER\",\"password\":\"$TAIGA_PASSWORD\"}" \
   "$TAIGA_URL/api/v1/auth")
 
 AUTH_TOKEN=$(echo $AUTH_RESPONSE | jq -r '.auth_token')
-TAIGA_USER_ID=$(echo $AUTH_RESPONSE | jq -r '.id')
-
 if [ "$AUTH_TOKEN" == "null" ] || [ -z "$AUTH_TOKEN" ]; then
   log_error "Authentication failed. Please check your credentials in .env file."
   exit 1
 fi
 echo "Authentication successful"
+
+# Get User ID from authentication response
+TAIGA_USER_ID=$(echo $AUTH_RESPONSE | jq -r '.id')
 
 # Read the story ID from first line
 read -r STORY_ID < "$INPUT_FILE"
@@ -91,10 +97,11 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
     echo "Task '$TASK_SUBJECT' already created, skipping."
     continue
   fi
-    
+
   # Create the task
   TASK_RESPONSE=$(curl -X POST \
     -H "Content-Type: application/json" \
+    -H "User-Agent: ${USER_AGENT}" \
     -H "Authorization: Bearer ${AUTH_TOKEN}" \
     -d "{
       \"subject\": \"${TASK_SUBJECT}\",
@@ -112,13 +119,14 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
     
   if [ "$TASK_ID" == "null" ] || [ -z "$TASK_ID" ]; then
     log_error "Failed to create task: $TASK_SUBJECT"
-    log_error "Error response: $TASK_RESPONSE"
+    log_error "Error: $TASK_RESPONSE"
     continue
   fi
     
   # Update the custom fields
   CUSTOM_FIELDS_RESPONSE=$(curl -X PATCH \
     -H "Content-Type: application/json" \
+    -H "User-Agent: ${USER_AGENT}" \
     -H "Authorization: Bearer ${AUTH_TOKEN}" \
     -d "{
       \"attributes_values\": {
@@ -132,7 +140,7 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
 
   if echo "$CUSTOM_FIELDS_RESPONSE" | grep -q "error"; then
     log_error "Failed to update custom fields for task: $TASK_ID"
-    log_error "Error response: $CUSTOM_FIELDS_RESPONSE"
+    log_error "Error: $CUSTOM_FIELDS_RESPONSE"
     continue
   fi
     
