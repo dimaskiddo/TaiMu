@@ -82,6 +82,38 @@ fi
 # Read the story ID from first line
 read -r STORY_REF_ID < "$INPUT_FILE"
 
+# Get user story ID from ref ID
+STORY_RESPONSE=$(curl -X GET \
+  -H "Content-Type: application/json" \
+  -H "User-Agent: ${USER_AGENT}" \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -s "${TAIGA_URL}/api/v1/userstories/by_ref?ref=${STORY_REF_ID}&project=${PROJECT_ID}")
+
+# Extract the story ID
+STORY_ID=$(echo $STORY_RESPONSE | jq -r '.id')
+
+if [ "$STORY_ID" == "null" ] || [ -z "$STORY_ID" ]; then
+  log_error "Failed to fetch Story ID for Story Reference ID $STORY_REF_ID"
+  log_error "Error: $STORY_RESPONSE"
+  exit 1
+fi
+
+# Get task status ID for Done
+STATUS_RESPONSE=$(curl -X GET \
+  -H "Content-Type: application/json" \
+  -H "User-Agent: ${USER_AGENT}" \
+  -H "Authorization: Bearer ${AUTH_TOKEN}" \
+  -s "${TAIGA_URL}/api/v1/task-statuses?project=${PROJECT_ID}")
+
+# Extract the status "Done" ID
+STATUS_DONE_ID=$(echo $STATUS_RESPONSE | jq '.[] | select(.name=="Done")' | jq -r '.id')
+
+if [ "$STATUS_DONE_ID" == "null" ] || [ -z "$STATUS_DONE_ID" ]; then
+  log_error "Failed to fetch Status for Done ID with Project ID $PROJECT_ID ($PROJECT_SLUG)"
+  log_error "Error: $STATUS_RESPONSE"
+  exit 1
+fi
+
 # Process each line after the first one until blank line
 tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE START_TIME TIME_SPENT; do
   # Trim whitespace
@@ -112,38 +144,6 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
   if grep -q "$TASK_SUBJECT | $ACTIVITY_DATE | $START_TIME | $TIME_SPENT" "$CREATED_TASKS_FILE"; then
     echo "Task '$TASK_SUBJECT' already created, skipping."
     continue
-  fi
-
-  # Get user story ID from ref ID
-  STORY_RESPONSE=$(curl -X GET \
-    -H "Content-Type: application/json" \
-    -H "User-Agent: ${USER_AGENT}" \
-    -H "Authorization: Bearer ${AUTH_TOKEN}" \
-    -s "${TAIGA_URL}/api/v1/userstories/by_ref?ref=${STORY_REF_ID}&project=${PROJECT_ID}")
-
-  # Extract the story ID
-  STORY_ID=$(echo $STORY_RESPONSE | jq -r '.id')
-
-  if [ "$STORY_ID" == "null" ] || [ -z "$STORY_ID" ]; then
-    log_error "Failed to fetch Story ID for Story Reference ID $STORY_REF_ID"
-    log_error "Error: $STORY_RESPONSE"
-    exit 1
-  fi
-
-  # Get task status ID for Done
-  STATUS_RESPONSE=$(curl -X GET \
-    -H "Content-Type: application/json" \
-    -H "User-Agent: ${USER_AGENT}" \
-    -H "Authorization: Bearer ${AUTH_TOKEN}" \
-    -s "${TAIGA_URL}/api/v1/task-statuses?project=${PROJECT_ID}")
-
-  # Extract the status "Done" ID
-  STATUS_DONE_ID=$(echo $STATUS_RESPONSE | jq '.[] | select(.name=="Done")' | jq -r '.id')
-
-  if [ "$STATUS_DONE_ID" == "null" ] || [ -z "$STATUS_DONE_ID" ]; then
-    log_error "Failed to fetch Status for Done ID with Project ID $PROJECT_ID ($PROJECT_SLUG)"
-    log_error "Error: $STATUS_RESPONSE"
-    exit 1
   fi
 
   # Create the task
