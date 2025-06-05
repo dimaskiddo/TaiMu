@@ -1,8 +1,8 @@
 .env
-create.sh
-get_id.sh
+*.sh
 
 logs/*
 tasks/*
 
 !tasks/example.txt
+!taicli.sh
