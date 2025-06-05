@@ -33,7 +33,7 @@ These scripts help you create tasks in Taiga from the command line or from a bul
 TAIGA_URL=https://your-taiga-domain.com
 TAIGA_USER=your_username
 TAIGA_PASSWORD=your_password
-PROJECT_ID=123
+PROJECT_SLUG=ABCD
 ```
 Replace the values with your actual Taiga credentials and IDs.
 
