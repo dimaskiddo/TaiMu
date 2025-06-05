@@ -112,7 +112,7 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
     -H "Content-Type: application/json" \
     -H "User-Agent: ${USER_AGENT}" \
     -H "Authorization: Bearer ${AUTH_TOKEN}" \
-    -s ${TAIGA_URL}api/v1/task-statuses?project=${PROJECT_ID})  
+    -s ${TAIGA_URL}/api/v1/task-statuses?project=${PROJECT_ID})  
 
   STATUS_DONE_ID=$(echo $STATUS_RESPONSE | jq '.[] | select(.name=="Done")' | jq -r '.id')
 
@@ -131,26 +131,42 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
       \"is_closed\": true
     }" \
     -s "${TAIGA_URL}/api/v1/tasks")
-     
+
   # Extract the task ID
   TASK_ID=$(echo $TASK_RESPONSE | jq -r '.id')
-    
+
   if [ "$TASK_ID" == "null" ] || [ -z "$TASK_ID" ]; then
     log_error "Failed to create task: $TASK_SUBJECT"
     log_error "Error: $TASK_RESPONSE"
     continue
   fi
-    
-  # Update the custom fields
+
+  # Get task custom attributes
+  ATTR_RESPONSE=$(curl -X GET \
+    -H "Content-Type: application/json" \
+    -H "User-Agent: ${USER_AGENT}" \
+    -H "Authorization: Bearer ${AUTH_TOKEN}" \
+    -s ${TAIGA_URL}/api/v1/task-custom-attributes?task=${TASK_ID}&project=${PROJECT_ID})
+
+  # Get custom attribute ID for "Activity Date"
+  ACTIVITY_DATE_ID=$(echo $ATTR_RESPONSE | jq '.[] | select(.name=="Activity Date")' | jq -r '.id')
+
+  # Get custom attribute ID for "Start Time"
+  START_TIME_ID=$(echo $ATTR_RESPONSE | jq '.[] | select(.name=="Start Time")' | jq -r '.id')
+
+  # Get custom attribute ID for "Total Time Spent"
+  TOTAL_TIME_SPENT_ID=$(echo $ATTR_RESPONSE | jq '.[] | select(.name=="Total Time Spent")' | jq -r '.id')
+
+  # Update the custom attributes
   CUSTOM_FIELDS_RESPONSE=$(curl -X PATCH \
     -H "Content-Type: application/json" \
     -H "User-Agent: ${USER_AGENT}" \
     -H "Authorization: Bearer ${AUTH_TOKEN}" \
     -d "{
       \"attributes_values\": {
-        \"5504\": \"${ACTIVITY_DATE}\",
-        \"5505\": \"${START_TIME}\",
-        \"5506\": \"${TIME_SPENT}\"
+        \"${ACTIVITY_DATE_ID}\": \"${ACTIVITY_DATE}\",
+        \"${START_TIME_ID}\": \"${START_TIME}\",
+        \"${TOTAL_TIME_SPENT_ID}\": \"${TIME_SPENT}\"
       },
       \"version\": 1
     }" \
@@ -164,7 +180,6 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
     
   echo "$TASK_SUBJECT | $ACTIVITY_DATE | $START_TIME | $TIME_SPENT" >> "$CREATED_TASKS_FILE"
   echo "Subtask '$TASK_SUBJECT' created and the custom fields updated."
-
 done
 
 echo "All tasks done. Check logs for details."
