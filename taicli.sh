@@ -64,7 +64,7 @@ echo "Authentication successful"
 TAIGA_USER_ID=$(echo $AUTH_RESPONSE | jq -r '.id')
 
 # Read the story ID from first line
-read -r STORY_ID < "$INPUT_FILE"
+read -r STORY_REF_ID < "$INPUT_FILE"
 
 # Process each line after the first one until blank line
 tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE START_TIME TIME_SPENT; do
@@ -97,6 +97,15 @@ tail -n +2 "$INPUT_FILE" | while IFS='|' read -r TASK_SUBJECT ACTIVITY_DATE STAR
     echo "Task '$TASK_SUBJECT' already created, skipping."
     continue
   fi
+
+  # Get user story ID from ref ID
+  STORY_RESPONSE=$(curl -X GET \
+    -H "Content-Type: application/json" \
+    -H "User-Agent: ${USER_AGENT}" \
+    -H "Authorization: Bearer ${AUTH_TOKEN}" \
+    -s ${TAIGA_URL}/api/v1/userstories/by_ref?ref=${STORY_REF_ID}&project=${PROJECT_ID})
+
+  STORY_ID=$(echo $STORY_RESPONSE | jq -r '.id')
 
   # Create the task
   TASK_RESPONSE=$(curl -X POST \
