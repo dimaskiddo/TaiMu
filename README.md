@@ -21,7 +21,6 @@ These scripts help you create tasks in Taiga from the command line or from a bul
    chmod +x *.sh
    ```
    This grants execute permissions to all shell scripts in the directory.
-
 3. Create directories for logs and tasks:
    ```bash
    mkdir -p logs tasks
@@ -46,6 +45,7 @@ Create multiple tasks from a structured input file.
 STORY_REF_ID
 Task Subject | YYYY-MM-DD | HH:MM | Minutes
 Another Task | YYYY-MM-DD | HH:MM | Minutes
+
 ```
 - First line: The ID of the user story where tasks will be created
 - Following lines: Task data with fields separated by  `|`  character:
@@ -53,6 +53,7 @@ Another Task | YYYY-MM-DD | HH:MM | Minutes
   - Activity date (YYYY-MM-DD format)
   - Start time (HH:MM format)
   - Time spent (in minutes)
+- Don't forget to add empty line in the buttom of file
 
 ## Logs
 All operations are logged in the  logs  directory:
@@ -65,6 +66,7 @@ All operations are logged in the  logs  directory:
 597462
 Daily Standup Meeting | 2025-06-02 | 09:30 | 30
 Code Review Session | 2025-06-02 | 14:00 | 120
+
 ```
 Run With:
 `./taicli.sh tasks/task.txt`
