@@ -49,6 +49,7 @@ Create multiple tasks from a structured input file.
 STORY_REF_ID
 Task Subject | YYYY-MM-DD | HH:MM | Minutes
 Another Task | YYYY-MM-DD | HH:MM | Minutes
+
 ```
 - File should be in Unix format or using "LF" instead of "CRLF"
 - First line: The ID of the user story where tasks will be created
@@ -57,6 +58,7 @@ Another Task | YYYY-MM-DD | HH:MM | Minutes
   - Activity date (YYYY-MM-DD format)
   - Start time (HH:MM format)
   - Time spent (in minutes)
+- Don't forget to add empty line in the buttom of file
 
 ## Logs
 All operations are logged in the  logs  directory:
@@ -69,6 +71,7 @@ All operations are logged in the  logs  directory:
 597462
 Daily Standup Meeting | 2025-06-02 | 09:30 | 30
 Code Review Session | 2025-06-02 | 14:00 | 120
+
 ```
 Run With:
 `./taicli.sh tasks/task.txt`
