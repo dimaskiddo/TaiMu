@@ -7,33 +7,36 @@ These scripts help you create tasks in Taiga from the command line or from a bul
 ## Prerequisites
 - Bash
 - cURL
-- JQ (JSON Query CLI Tool)
+- JQ (JSON Query CLI)
 - Taiga Account with API Access
 
 ## Installation
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/donnitriosa/TaiCLI.git
-   cd taicli
-   ```
+    ```bash
+    git clone https://github.com/donnitriosa/TaiCLI.git
+    cd taicli
+    ```
 2. Make the scripts executable:
-   ```bash
-   chmod +x *.sh
-   ```
+    ```bash
+    chmod +x *.sh
+    ```
    This grants execute permissions to all shell scripts in the directory.
-
-3. Create directories for logs and tasks:
-   ```bash
-   mkdir -p logs tasks
-   ```
+3. Install JSON Query CLI
+    ```bash
+    sudo apt-get -y install jq
+    ```
+4. Create directories for logs and tasks:
+    ```bash
+    mkdir -p logs tasks
+    ```
 
 ## Setup
 1.  Create a .env file in the script directory with the following variables:
 ```
-TAIGA_URL=https://your-taiga-domain.com
-TAIGA_USER=your_username
-TAIGA_PASSWORD=your_password
-PROJECT_SLUG=ABCD
+TAIGA_URL="https://your-taiga-domain.com"
+TAIGA_USER="your_email_or_username"
+TAIGA_PASSWORD="your_password"
+PROJECT_SLUG="ABCD"
 ```
 Replace the values with your actual Taiga credentials and IDs.
 
@@ -47,6 +50,7 @@ STORY_REF_ID
 Task Subject | YYYY-MM-DD | HH:MM | Minutes
 Another Task | YYYY-MM-DD | HH:MM | Minutes
 ```
+- File should be in Unix format or using "LF" instead of "CRLF"
 - First line: The ID of the user story where tasks will be created
 - Following lines: Task data with fields separated by  `|`  character:
   - Task subject
